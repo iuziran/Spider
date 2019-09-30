@@ -11,16 +11,65 @@ from PIL import Image
 from lxml import etree
 from selenium import webdriver
 
-from Spider.util.YDMHTTPDemo3 import YDMHttp
+from PocketLifeSpider.util.YDMHTTPDemo3 import YDMHttp
 
 abspath = os.getcwd()
 # 警用requests中的警告
 urllib3.disable_warnings()
 
+# 转换电视中的类型
+def reverse_tv_type(type):
+    if (type == 'CCTV频道'): type = '央视台'
+    elif (type == '卫视频道'): type = '卫视台'
+    elif (type == '港澳台频道'): type = '港澳台'
+    elif (type == '国外电视台'): type = '海外台'
+    return type
+
+# 转换地区
+def reverse_region(region):
+    if (region == '内地'):
+        region = '大陆'
+    elif (region == '美国' or region == '英国' or region == '法国' or region == '德国' or region == '意大利'):
+        region = '欧美'
+    elif (region == '中国香港'):
+        region = '香港'
+    elif (region == '中国台湾'):
+        region = '台湾'
+    return region
+
+
+# 转换影视第二类型
+def reverse_type2(type2):
+    if (type2 == '内地'):
+        type2 = '国产剧'
+    elif (type2 == '美国' or type2 == '英国'):
+        type2 = '欧美剧'
+    elif (type2 == '韩国'):
+        type2 = '韩国剧'
+    elif (type2 == '泰国'):
+        type2 = '海外剧'
+    elif (type2 == '日本'):
+        type2 = '日本剧'
+    elif (type2 == '中国香港'):
+        type2 = '香港剧'
+    elif (type2 == '中国台湾'):
+        type2 = '台湾剧'
+    elif (type2 == '其他'):
+        type2 = '海外剧'
+    return type2
+
+
+# 获取当前时间
+def get_current_time(format='%Y-%m-%d %H:%M:%S'):
+    # 优化格式化化版本
+    return time.strftime(format, time.localtime(time.time()))
+
+
 # 产生指定范围的随机数，小数的范围m ~ n，小数的精度p
 def get_random_str(m=5, n=10, p=1):
     a = random.uniform(m, n)
     return (str)(round(a, p))
+
 
 # 从xpath中获取数组
 def get_arr_from_xpath(xpath):
@@ -29,31 +78,35 @@ def get_arr_from_xpath(xpath):
     else:
         return (str)(xpath[0]).split(',')
 
+
 # 从xpath中获取字符串
 def get_str_from_xpath(xpath):
     if len(xpath) == 0:
         return ''
     else:
-        return (str)(xpath[0])
+        return (str)(xpath[0]).strip()
+
 
 # 下载文件
-def downloadFile(url,path, name):
-    resp = requests.get(url=url,stream=True, verify=False)
-	#stream=True的作用是仅让响应头被下载，连接保持打开状态，
-    content_size = int(resp.headers['Content-Length'])/1024		#确定整个安装包的大小
+def downloadFile(url, path, name):
+    resp = requests.get(url=url, stream=True, verify=False)
+    # stream=True的作用是仅让响应头被下载，连接保持打开状态，
+    content_size = int(resp.headers['Content-Length']) / 1024  # 确定整个安装包的大小
     with open(path + '/' + name, "wb") as f:
-        print("整个文件大小是是：",content_size / 1024,'M')
-        for data in tqdm(iterable=resp.iter_content(1024),total=content_size,unit='k',desc=name):
-	#调用iter_content，一块一块的遍历要下载的内容，搭配stream=True，此时才开始真正的下载
-	#iterable：可迭代的进度条 total：总的迭代次数 desc：进度条的前缀
+        print("整个文件大小是是：", content_size / 1024, 'M')
+        for data in tqdm(iterable=resp.iter_content(1024), total=content_size, unit='k', desc=name):
+            # 调用iter_content，一块一块的遍历要下载的内容，搭配stream=True，此时才开始真正的下载
+            # iterable：可迭代的进度条 total：总的迭代次数 desc：进度条的前缀
             f.write(data)
 
-#g_tk算法
+
+# g_tk算法
 def get_g_tk(p_skey):
     hashes = 5381
     for letter in p_skey:
         hashes += (hashes << 5) + ord(letter)  # ord()是用来返回字符的ascii码
     return (str)(hashes & 0x7fffffff)
+
 
 # 创建文件夹
 def mkdir(path):
@@ -78,6 +131,7 @@ def mkdir(path):
         print(path + ' 目录已存在')
     return True
 
+
 # 滑动到页面最低端
 def scrollToBottom(driver, frame_name):
     driver.switch_to.frame(frame_name)
@@ -95,6 +149,7 @@ def scrollToBottom(driver, frame_name):
         driver.switch_to.frame(frame_name)
         source2 = driver.page_source
 
+
 # 判断数据是否爬取
 def check_spider_history(type, url):
     if os.path.exists(abspath + '/documentations/history/' + type + '.txt') == False:
@@ -108,10 +163,10 @@ def check_spider_history(type, url):
         return False
     return url in histories
 
+
 # 读取数据爬取的历史
 def get_spider_history(type):
-    path = abspath + '/documentations/history/' + type + '.txt'
-    with open(path, 'r+') as f:
+    with open(abspath + '/documentations/history/' + type + '.txt', 'r') as f:
         list = []
         while True:
             line = f.readline()  # 整行读取数据
@@ -120,14 +175,15 @@ def get_spider_history(type):
             list.append(line)
     return list
 
+
 # 写入数据爬取的历史
 def write_spider_history(type, url):
-    path = abspath + '/documentations/history/' + type + '.txt'
-    with open(path, 'a+') as f:
+    with open(abspath + '/documentations/history/' + type + '.txt', 'a') as f:
         f.write(url)
         f.write('\n')
         print(type + ' -> ' + url + ' 写入成功')
     f.close()
+
 
 # 更新视频解析网站的哈希值
 def update_parsevideo_hash():
@@ -145,6 +201,7 @@ def update_parsevideo_hash():
     html = html.replace('var hash = "' + old_hash + '";', 'var hash = "' + new_hash + '";')
     with open('../../../Web/PocketFilm/views/index.html', 'w') as f:
         f.write(html)
+
 
 # 解决视频解析时的验证码问题
 def solve_parsevideo_captche(url='https://pocket.mynatapp.cc/#https://v.youku.com/v_show/id_XMzc5OTM0OTAyMA==.html'):
@@ -165,6 +222,7 @@ def solve_parsevideo_captche(url='https://pocket.mynatapp.cc/#https://v.youku.co
     else:
         print('当前不用输入验证码')
     driver.quit()
+
 
 # 裁剪指定元素
 def capture(driver, element, image_path=abspath + '/image', image_name='captcha'):
@@ -190,6 +248,7 @@ def capture(driver, element, image_path=abspath + '/image', image_name='captcha'
     imgPath = os.path.join(image_path, '%s.png' % image_name)
     picture.save(imgPath)
     print('元素图标保存位置 -> ' + image_path + '/' + image_name)
+
 
 # 识别验证码
 def captcha(image_path=abspath + '/image/captcha.png'):
@@ -225,6 +284,7 @@ def captcha(image_path=abspath + '/image/captcha.png'):
         print('cid: %s, result: %s' % (cid, result))
         return result
 
+
 # 获取一个页面的源代码
 def get_one_page(url, encode='utf-8'):
     if encode == None:
@@ -235,12 +295,14 @@ def get_one_page(url, encode='utf-8'):
         return response.text
     return None
 
+
 # 根据 url 获取响应数据
 def get_response(url):
     ua_header = {
         'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_14_3) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.119 Safari/537.36'
     }
-    return requests.get(url, headers=ua_header,verify=False)
+    return requests.get(url, headers=ua_header, verify=False)
+
 
 # 解析一个页面的信息
 def parse_one_page(html, pattern):
@@ -252,9 +314,11 @@ def parse_one_page(html, pattern):
     except:
         yield ()
 
+
 # 通过xpath解析一个页面的信息
 def parse_one_page_with_xpath(html, xpath_pattern):
     return etree.HTML(html)
+
 
 # 获取视频解析后的地址
 def get_movie_parse_url(url):
@@ -263,13 +327,14 @@ def get_movie_parse_url(url):
     data = driver.execute_script('return parent.now')
     return data
 
+
 # 获取 web 驱动
 def get_driver(type=0):
     # PhantomJS
     if type == 0:
         driver = webdriver.PhantomJS(
             executable_path=abspath + '/phantomjs/bin/phantomjs')
-            # executable_path='/usr/local/software/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
+        # executable_path='/usr/local/software/phantomjs-2.1.1-linux-x86_64/bin/phantomjs')
     # Chrome
     if type == 1:
         # 加启动配置
@@ -297,6 +362,7 @@ def get_driver(type=0):
     # driver.set_page_load_timeout(60)
     # driver.set_script_timeout(60)
     return driver
+
 
 # 获取数组中的第一个元素
 def get_first_item(arr):

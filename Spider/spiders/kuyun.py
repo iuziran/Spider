@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
 
-from Spider.items import MovieItem
-from Spider.util.MongoDbUtils import MongoDbUtils
-from Spider.util.CommonUtils import *
+from PocketLifeSpider.items import MovieItem
+from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
+from PocketLifeSpider.util.CommonUtils import *
 
 class KuyunSpider(scrapy.Spider):
     name = 'kuyun'
@@ -19,7 +19,7 @@ class KuyunSpider(scrapy.Spider):
 
     custom_settings = {
         'ITEM_PIPELINES': {
-            'Spider.pipelines.ZuidaSpiderPipeline': 300,
+            'PocketLifeSpider.pipelines.ZuidaSpiderPipeline': 300,
         }
     }
 
@@ -84,7 +84,7 @@ class KuyunSpider(scrapy.Spider):
             each = html.xpath('//table[@style="text-align:left"]')[0]
             movie_item = MovieItem()
             movie_item['id'] = movie_id
-            movie_item['src'] = get_arr_from_xpath(each.xpath('./tr[1]/td[1]/div/img/@src')[0])
+            movie_item['src'] = get_str_from_xpath(each.xpath('./tr[1]/td[1]/div/img/@src'))
             movie_item['name'] = get_str_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[1]/td/font/text()'))
             movie_item['update_status'] = get_str_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[7]/td/font/text()'))
             movie_item['score'] = get_random_str()
@@ -103,8 +103,10 @@ class KuyunSpider(scrapy.Spider):
                 movie_item['type'] = '动漫'
             elif movie_item['type2'].find('福利片') != -1:
                 movie_item['type'] = '福利片'
+                continue
             elif movie_item['type2'].find('伦理片') != -1:
                 movie_item['type'] = '伦理片'
+                continue
             elif movie_item['type2'].find('音乐片') != -1:
                 movie_item['type'] = '音乐片'
             elif movie_item['type2'].find('片') != -1 or movie_item['type2'].find('电影') != -1:
@@ -116,7 +118,7 @@ class KuyunSpider(scrapy.Spider):
             movie_item['release_date'] = get_str_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[9]/td/font/text()'))
             movie_item['duration'] = '无'
             movie_item['update_time'] = get_str_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[6]/td/font/text()'))
-            movie_item['description'] = get_str_from_xpath(each.xpath('//div[@class="intro"]/font/span/text()'))
+            movie_item['description'] = get_str_from_xpath(each.xpath('//div[@class="intro"]/font/text()'))
             sources = []
             for each2 in each.xpath('//td[@class="bt"]'):
                 source = {'name': '', 'types': []}

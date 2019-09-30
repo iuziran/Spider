@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import scrapy
 
-from Spider.util.CommonUtils import *
-from Spider.util.MongoDbUtils import MongoDbUtils
+from PocketLifeSpider.util.CommonUtils import *
+from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
 
 
 class PieceSpider(scrapy.Spider):
     name = 'piece'
     allowed_domains = ['www.xiaopin5.com']
-    start_urls = []
-    origin_url = 'https://www.xiaopin5.com/'
+    start_urls = ['https://www.xiaopin5.com/erz/']
+    origin_url = 'http://www.xiaopin5.com/'
     type = 'piece'
 
     def __init__(self, name=None, **kwargs):
@@ -87,7 +87,8 @@ class PieceSpider(scrapy.Spider):
                         'type': type,
                         'type2': type2,
                         'drama_url': play_url,
-                        'url': url2
+                        'url': url2,
+                        'acquisition_time': get_current_time()
                     }
                     print('正在抓取 -> ' + type + ' ' + type2 + ' ' + piece['name'])
                     db_util.insert(piece)

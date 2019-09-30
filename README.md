@@ -8,6 +8,10 @@
 
 ### 功能说明
 
+##### 腾讯视频
+
+网址为：https://v.qq.com/，爬虫名称：tencent，内容：主要包括各种最新影视资源
+
 ##### 最大资源网
 
 网址为：www.zuidazy1.net，爬虫名称：zuida，内容：主要包括各种最新影视资源
@@ -16,9 +20,9 @@
 
 网址为：www.kuyunzy1.com，爬虫名称：kuyun，内容：主要包括各种最新影视资源
 
-##### 爱看TV
+##### 好趣网
 
-网址为：www.icantv.cn，爬虫名称：tv，内容：主要包括各种电视资源
+网址为：www.haoqu.net，爬虫名称：tv，内容：主要包括各种电视资源
 
 ##### 戏曲屋
 
@@ -45,6 +49,12 @@
 ### 更新日志
 
 ------
+
+#### v1.1.0 `2019/9/30`
+
+- 新增腾讯影视爬虫(```tencent```)
+- 电视爬虫接口更新为好趣网(http://www.haoqu.net)
+- 优化原有爬虫部分逻辑
 
 #### v1.0.0 `2019/9/25`
 
@@ -82,3 +92,4 @@ settings = {
 | 小品屋             | scrapy crawl piece                     |
 | 小品屋(小品类型)   | scrapy crawl piece_type                |
 | QQ相册             | scrapy crawl album                     |
+| 腾讯视频           | scrapy crawl tencent                   |

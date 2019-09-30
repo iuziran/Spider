@@ -46,6 +46,8 @@ class MovieItem(scrapy.Item):
     sources = scrapy.Field()
     # 地区
     region = scrapy.Field()
+    # 采集时间
+    acquisition_time = scrapy.Field()
 
 # 影视类型
 class MovieTypeItem(scrapy.Item):
@@ -53,6 +55,8 @@ class MovieTypeItem(scrapy.Item):
     type = scrapy.Field()
     # 名称
     names = scrapy.Field()
+    # 采集时间
+    acquisition_time = scrapy.Field()
 
 # 电视
 class TvItem(scrapy.Item):
@@ -66,6 +70,8 @@ class TvItem(scrapy.Item):
     sources = scrapy.Field()
     # 介绍
     introduction = scrapy.Field()
+    # 采集时间
+    acquisition_time = scrapy.Field()
 
 # 戏曲
 class DramaItem(scrapy.Item):
@@ -89,3 +95,5 @@ class DramaItem(scrapy.Item):
     play_time = scrapy.Field()
     # 戏曲源
     sources = scrapy.Field()
+    # 采集时间
+    acquisition_time = scrapy.Field()

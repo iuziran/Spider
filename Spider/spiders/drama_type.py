@@ -4,9 +4,9 @@ import time
 import numpy
 import scrapy
 
-from Spider.items import DramaItem
-from Spider.util.CommonUtils import *
-from Spider.util.MongoDbUtils import MongoDbUtils
+from PocketLifeSpider.items import DramaItem
+from PocketLifeSpider.util.CommonUtils import *
+from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
 
 
 class DramaTypeSpider(scrapy.Spider):

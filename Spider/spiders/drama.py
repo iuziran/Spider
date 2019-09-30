@@ -7,9 +7,9 @@ import redis
 import scrapy
 from selenium.webdriver.support.wait import WebDriverWait
 
-from Spider.items import DramaItem
-from Spider.util.CommonUtils import *
-from Spider.util.MongoDbUtils import MongoDbUtils
+from PocketLifeSpider.items import DramaItem
+from PocketLifeSpider.util.CommonUtils import *
+from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
 
 
 class DramaSpider(scrapy.Spider):
@@ -179,6 +179,7 @@ class DramaSpider(scrapy.Spider):
                             sources.append(source)
                             count_source += 1
                         dramaItem['sources'] = sources
+                        dramaItem['acquisition_time'] = get_current_time()
                         dic = {'id': id}
                         print('正在插入 -> 类型:' + type_name + ' 当前页:' + (str)((int)(index)) + ' 总页数:' + (str)(
                             (int)(total_page)) + ' 戏曲id:' + id + ' 戏曲名称:' + dramaItem['name'])

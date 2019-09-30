@@ -5,7 +5,7 @@ settings = {
     # "ip":'localhost',   #ip
     "ip":'127.0.0.1',   #ip
     "port":27017,           #端口
-    "db_name" : "spider",    #数据库名字
+    "db_name" : "pocket",    #数据库名字
 }
 
 class MongoDbUtils(object):

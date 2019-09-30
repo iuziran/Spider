@@ -1,15 +1,15 @@
 # -*- coding: utf-8 -*-
 import scrapy
 
-from Spider.util.CommonUtils import *
-from Spider.util.MongoDbUtils import MongoDbUtils
+from PocketLifeSpider.util.CommonUtils import *
+from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
 
 
 class PieceTypeSpider(scrapy.Spider):
     name = 'piece_type'
     allowed_domains = ['www.xiaopin5.com']
-    start_urls = ['https://www.xiaopin5.com/']
-    origin_url = 'https://www.xiaopin5.com/'
+    start_urls = ['http://www.xiaopin5.com/']
+    origin_url = 'http://www.xiaopin5.com/'
     type = 'piece_type'
 
     def parse(self, response):

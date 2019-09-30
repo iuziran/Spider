@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 import scrapy
 
-from Spider.items import MovieItem
-from Spider.util.MongoDbUtils import MongoDbUtils
-from Spider.util.CommonUtils import *
+from PocketLifeSpider.items import MovieItem
+from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
+from PocketLifeSpider.util.CommonUtils import *
 
 class ZuidaSpider(scrapy.Spider):
     name = 'zuida'
@@ -20,7 +20,7 @@ class ZuidaSpider(scrapy.Spider):
 
     custom_settings = {
         'ITEM_PIPELINES': {
-            'Spider.pipelines.ZuidaSpiderPipeline': 300,
+            'PocketLifeSpider.pipelines.ZuidaSpiderPipeline': 300,
         }
     }
 
@@ -97,17 +97,17 @@ class ZuidaSpider(scrapy.Spider):
             movie_item['nickname'] = get_str_from_xpath(each.xpath('./div[1]/div/div/div[2]/div[2]/ul/li[1]/span/text()'))
             movie_item['directors'] = get_arr_from_xpath(each.xpath('./div[1]/div/div/div[2]/div[2]/ul/li[2]/span/text()'))
             movie_item['actors'] = get_arr_from_xpath(each.xpath('./div[1]/div/div/div[2]/div[2]/ul/li[3]/span/text()'))
-            movie_item['type2'] = get_str_from_xpath(each.xpath('./div[1]/div/div/div[2]/div[2]/ul/li[1]/span/text()'))
+            movie_item['type2'] = get_str_from_xpath(each.xpath('./div[1]/div/div/div[2]/div[2]/ul/li[4]/span/text()'))
             if movie_item['type2'].find('综艺') != -1:
                 movie_item['type'] = '综艺'
             elif movie_item['type2'].find('动漫') != -1:
                 movie_item['type'] = '动漫'
             elif movie_item['type2'].find('福利片') != -1:
-                movie_item['type'] = '福利片'
+                continue
             elif movie_item['type2'].find('伦理片') != -1:
-                movie_item['type'] = '伦理片'
+                continue
             elif movie_item['type2'].find('音乐片') != -1:
-                movie_item['type'] = '音乐片'
+                continue
             elif movie_item['type2'].find('片') != -1:
                 movie_item['type'] = '电影'
             elif movie_item['type2'].find('剧') != -1:
