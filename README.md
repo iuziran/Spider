@@ -8,17 +8,25 @@
 
 ### 功能说明
 
+##### 爱奇艺视频
+
+网址为：[https://iqiyi.com](https://www.iqiyi.com/)，爬虫名称：iqiyi，内容：主要包括各种爱奇艺视频中的电影、电视剧、综艺、动漫、少儿
+
+##### 优酷视频
+
+网址为：[https://youku.com](https://youku.com/)，爬虫名称：youku，内容：主要包括各种优酷视频中的电影、电视剧、综艺、动漫、少儿
+
 ##### 腾讯视频
 
-网址为：https://v.qq.com，爬虫名称：tencent，内容：主要包括各种最新影视资源
+网址为：https://v.qq.com，爬虫名称：tencent，内容：主要包括各种腾讯视频中的电影、电视剧、综艺、动漫、少儿
 
 ##### 最大资源网
 
-网址为：www.zuidazy1.net，爬虫名称：zuida，内容：主要包括各种最新影视资源
+网址为：www.zuidazy1.net，爬虫名称：zuida，内容：主要包括最大资源网中的各种最新影视资源
 
 ##### 酷云资源网
 
-网址为：www.kuyunzy1.com，爬虫名称：kuyun，内容：主要包括各种最新影视资源
+网址为：www.kuyunzy1.com，爬虫名称：kuyun，内容：主要包括酷云资源网中的各种最新影视资源
 
 ##### 好趣网
 
@@ -93,3 +101,5 @@ settings = {
 | 小品屋(小品类型)   | scrapy crawl piece_type                |
 | QQ相册             | scrapy crawl album                     |
 | 腾讯视频           | scrapy crawl tencent                   |
+| 优酷视频           | scrapy crawl youku                     |
+| 爱奇艺视频         | scrapy crawl iqiyi                     |

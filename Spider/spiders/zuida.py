@@ -42,7 +42,7 @@ class ZuidaSpider(scrapy.Spider):
             total_page = total // page_size
             if total_page % page_size != 0:
                 total_page = total_page + 1
-            for page_index in range(start_page, total_page + 1):
+            for page_index in reverse_arr(range(start_page, total_page + 1)):
                 self.start_urls.append(self.orign_url + str(page_index) + '.html')
 
     def parse(self, response):
@@ -71,7 +71,7 @@ class ZuidaSpider(scrapy.Spider):
         count = -1
         if self.keyword is not None:
             index = 4
-        for each in response.xpath("/html/body/div[4]/ul"):
+        for each in reverse_arr(response.xpath("/html/body/div[4]/ul")):
             count += 1
             if count == 0 or count == 51:
                 continue

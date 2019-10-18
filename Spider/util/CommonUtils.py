@@ -17,6 +17,27 @@ abspath = os.getcwd()
 # 警用requests中的警告
 urllib3.disable_warnings()
 
+# 对数组中的元素去空格
+def strip_arr(arr):
+    new_arr = []
+    for item in arr:
+        new_arr.append(item.strip(' '))
+    return new_arr
+
+# 将一个数组逆序排列
+def reverse_arr(arr):
+    new_arr = []
+    for i in reversed(arr):
+        new_arr.append(i)
+    return new_arr
+
+# 向字典中添加新的元素
+def insert_item_to_dic(dic, key, new_key, new_value):
+    arr = dic.get(key)
+    arr[new_key] = new_value
+    dic[key] = arr
+    return dic
+
 # 转换电视中的类型
 def reverse_tv_type(type):
     if (type == 'CCTV频道'): type = '央视台'
@@ -27,14 +48,16 @@ def reverse_tv_type(type):
 
 # 转换地区
 def reverse_region(region):
-    if (region == '内地'):
+    if (region == '内地' or region == '中国' or region == '华语'):
         region = '大陆'
     elif (region == '美国' or region == '英国' or region == '法国' or region == '德国' or region == '意大利'):
         region = '欧美'
-    elif (region == '中国香港'):
+    elif (region == '中国香港' or region == '香港地区'):
         region = '香港'
     elif (region == '中国台湾'):
         region = '台湾'
+    elif (region == '其它'):
+        region = '其他'
     return region
 
 
@@ -58,6 +81,12 @@ def reverse_type2(type2):
         type2 = '海外剧'
     return type2
 
+
+# 获取年份
+def get_year():
+    # 优化格式化化版本
+    format = '%Y'
+    return time.strftime(format, time.localtime(time.time()))
 
 # 获取当前时间
 def get_current_time(format='%Y-%m-%d %H:%M:%S'):
@@ -151,15 +180,15 @@ def scrollToBottom(driver, frame_name):
 
 
 # 判断数据是否爬取
-def check_spider_history(type, url):
+def check_spider_history(type, url, text='爬取'):
     if os.path.exists(abspath + '/documentations/history/' + type + '.txt') == False:
         return False
     histories = get_spider_history(type)
     if url + '\n' in histories:
-        print(type + ' -> ' + url + ' 已爬取')
+        print(type + ' -> ' + url + ' 已' + text)
         return True
     else:
-        print(type + ' -> ' + url + ' 未爬取')
+        print(type + ' -> ' + url + ' 未' + text)
         return False
     return url in histories
 
@@ -177,11 +206,11 @@ def get_spider_history(type):
 
 
 # 写入数据爬取的历史
-def write_spider_history(type, url):
+def write_spider_history(type, url, text='写入成功'):
     with open(abspath + '/documentations/history/' + type + '.txt', 'a') as f:
         f.write(url)
         f.write('\n')
-        print(type + ' -> ' + url + ' 写入成功')
+        print(type + ' -> ' + url + ' ' + text)
     f.close()
 
 
@@ -340,7 +369,7 @@ def get_driver(type=0):
         # 加启动配置
         options = webdriver.ChromeOptions()
         # 隐藏Chrome浏览器
-        # options.add_argument('--headless')
+        options.add_argument('--headless')
         # 禁用GPU
         # options.add_argument('--disable-gpu')
         # 开启实验性功能参数
