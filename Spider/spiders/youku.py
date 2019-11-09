@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+import json
+
 import scrapy
 from selenium.webdriver import ActionChains
 
@@ -14,10 +16,6 @@ class YoukuSpider(scrapy.Spider):
     start_urls = []
     domain = 'http://list.youku.com'
 
-    # 影视类型数字列表
-    type_num_list = ['96', '97', '85', '100', '177']
-    for tmp_type_num in type_num_list:
-        start_urls.append('https://list.youku.com/category/page?c='+tmp_type_num+'&type=show&p=1')
     # 数字与影视类型对应关系
     type_dic = {'96': '电影', '97': '电视剧', '85': '综艺', '100': '动漫', '177': '少儿'}
     # 数字与影视后缀对应关系
@@ -25,7 +23,7 @@ class YoukuSpider(scrapy.Spider):
 
     # 电影总数
     pageSize = 84
-    totalPage = 100
+    totalPage = 10
     total = pageSize * totalPage * len(start_urls)
     total_valid = 0
     index = 0
@@ -40,16 +38,31 @@ class YoukuSpider(scrapy.Spider):
     def __init__(self, target=None, name=None, **kwargs):
         super(YoukuSpider, self).__init__(name, **kwargs)
         self.target = target
-        if (self.target == 'latest'):
-            self.total_page = 2
+        # 影视类型数字列表
+        type_num_list = ['96', '97', '85', '100', '177']
+        if (self.target == 'all'):
+            for tmp_type_num in type_num_list:
+                url = 'https://list.youku.com/category/show/c_'+tmp_type_num+'.html'
+                html = get_one_page(url)
+                html = etree.HTML(html)
+                for a in html.xpath('//div[@class="yk-filter-panel"]/div[4]/ul/li/a'):
+                    a_href = get_str_from_xpath(a.xpath('./@href'))
+                    if ('r_' not in a_href):
+                        continue
+                    year = a_href.split('r_')[1].split('.html')[0]
+                    url = 'https://list.youku.com/category/page?c='+tmp_type_num+'&r='+year+'&type=show&p=1'
+                    self.start_urls.append(url)
+        elif (self.target == 'latest'):
+            for tmp_type_num in type_num_list:
+                self.start_urls.append('https://list.youku.com/category/page?c=' + tmp_type_num + '&type=show&p=1')
+            self.totalPage = 1
+            self.total = self.totalPage * self.pageSize * len(self.start_urls)
+        self.start_urls = reverse_arr(self.start_urls)
 
     def parse(self, response):
 
         # 开始时间
         start = time.time()
-
-        # 获取 web 驱动
-        driver = get_driver()
 
         # 获取所有电影的 id，用于判断电影是否已经爬取
         collection = 'movie'
@@ -71,7 +84,7 @@ class YoukuSpider(scrapy.Spider):
 
 
         # 生成视频列表地址
-        for i in reverse_arr(range(1, self.totalPage)):
+        for i in reverse_arr(range(1, self.totalPage + 1)):
             url = origin_url.split('p=')[0] + 'p=' + str(i)
             print(url)
             response = get_response(url)
@@ -83,33 +96,19 @@ class YoukuSpider(scrapy.Spider):
                 movie_item = MovieItem()
                 movie_item['src'] = list['img']
                 movie_item['name'] = list['title']
-                movie_item['update_status'] = list['summary']
-                # 视频已爬取且未更新
-                dic = {'name': movie_item['name']}
-                movie_server = db_utils.find(dic)
+                update_status = list['summary']
+                if (update_status == None or update_status == ''):
+                    update_status == '优酷视频'
+                movie_item['update_status'] = update_status
                 # 解析视频详情
                 videoLink = 'https:' + list['videoLink']
                 html = get_one_page(videoLink)
                 html = etree.HTML(html)
                 detail_url = 'https:' + get_str_from_xpath(html.xpath('//div[@class="tvinfo"]/h2/a/@href')).split('?')[0]
                 print(videoLink + ' ' + detail_url)
-                if (detail_url == 'https:'):
-                    # 记录跳过的视频信息
-                    history_type = 'youku'
-                    history_url = videoLink
-                    history_text = '跳过'
-                    if (check_spider_history(history_type, history_url, history_text) == False):
-                        write_spider_history(history_type, history_url, history_text)
-                    continue
                 try:
                     movie_id = detail_url.split('.html')[0].split('show/')[1]
                 except:
-                    # 记录跳过的视频信息
-                    history_type = 'youku'
-                    history_url = videoLink
-                    history_text = '跳过'
-                    if (check_spider_history(history_type, history_url, history_text) == False):
-                        write_spider_history(history_type, history_url, history_text)
                     continue
                 movie_item['id'] = movie_id
                 html = get_one_page(detail_url)
@@ -141,71 +140,43 @@ class YoukuSpider(scrapy.Spider):
                         type2 = '其他'
                     elif (type2.endswith(type_suffix) == False):
                         type2 = type2 + type_suffix
+                if (is_exclude_type2(type2) == True):
+                    continue
                 movie_item['type2'] = reverse_type2(type2)
                 movie_item['description'] = get_str_from_xpath(movie_detail_xpath.xpath('./li[@class="p-row p-intro"]/span[@class="intro-more hide"]/text()'))
                 movie_item['update_time'] = get_current_time()
                 movie_item['language'] = '内详'
                 movie_item['duration'] = '0'
                 # 解析播放列表
+                driver = get_driver()
                 driver.get(detail_url)
-                try:
-                    for li in driver.find_elements_by_xpath('//*[@id="showInfo"]/ul/li'):
-                        li.click()
-                except:
-                    # 记录跳过的视频信息
-                    history_type = 'youku'
-                    history_url = videoLink
-                    history_text = '跳过'
-                    if (check_spider_history(history_type, history_url, history_text) == False):
-                        write_spider_history(history_type, history_url, history_text)
-                    continue
+                page_config = driver.execute_script('return window.PageConfig')
+                driver.quit()
+                showid = page_config['showid']
                 sources = []
                 source = {'name': '优酷视频', 'types': []}
                 types = []
-                li_xpath = html.xpath('//div[@class="p-panel hide" or @class="p-panel"]/ul/li')
-                li_xpath_length = len(li_xpath)
-                for each in etree.HTML(driver.page_source).xpath('//div[@class="p-panel hide" or @class="p-panel"]/ul/li'):
-                    type = {'name': '', 'url': ''}
-                    if (type_num == '96' or type_num == '100' or type_num == '177'):
-                        type_name = get_str_from_xpath(each.xpath('./div/text()')) + ' ' + get_str_from_xpath(each.xpath('./div/a/text()')).split('...')[0]
-                        url = 'https:' + get_str_from_xpath(each.xpath('./div/a/@href')).split('?')[0]
-                        if (li_xpath_length < 4 and '至' not in type_name and type_num != '100' and type_num != '177'):
-                            type_name = movie_item['update_status']
-                            url = 'https:' + get_str_from_xpath(each.xpath('./dl/dt/a/@href'))
-                    elif (type_num == '97'):
-                        type_name = get_str_from_xpath(each.xpath('./a/text()'))
-                        url = 'https:' + get_str_from_xpath(each.xpath('./a/@href')).split('?')[0]
-                    elif (type_num == '85'):
-                        type_name = get_str_from_xpath(each.xpath('./dl/dt/text()')) + ' ' + get_str_from_xpath(each.xpath('./dl/dt/a/@title'))
-                        url = 'https:' + get_str_from_xpath(each.xpath('./dl/dt/a/@href'))
-                    type['name'] = type_name
-                    type['url'] = url
-                    print('正在爬取 '+movie_type+' '+(str)(i)+'/'+(str)(self.totalPage)+' '+(str)(self.index)+'/'+(str)(self.total)+' -> ' + movie_id + ' ' + source['name'] + ' ' + type['name'])
-                    types.append(type)
-                if (type_num == '96'):
-                    if (li_xpath_length >= 4):
-                        # key指定一个在进行比较之前作用在每个列表元素上的函数
-                        types.sort(key=lambda type: (int)(type.get('name').split(' ')[0]))
-                if (type_num == '85'):
-                    # key指定一个在进行比较之前作用在每个列表元素上的函数
-                    # reverse用来标记是否降序排序
-                    types.sort(key=lambda type: (int)(type.get('name').split(' ')[0][4:]), reverse=True)
-                if (type_num == '100' or type_num == '177'):
-                    # key指定一个在进行比较之前作用在每个列表元素上的函数
-                    try:
-                        types.sort(key=lambda type: (int)(type.get('name').split(' ')[0]))
-                    except:
-                        # 记录跳过的视频信息
-                        history_type = 'youku'
-                        history_url = videoLink
-                        history_text = '跳过'
-                        if (check_spider_history(history_type, history_url, history_text) == False):
-                            write_spider_history(history_type, history_url, history_text)
-                        continue
+                for page in range(1, 60):
+                    url = 'https://v.youku.com/page/playlist?&showid=' + showid + '&videoCategoryId=' + type_num + '&isSimple=false&videoEncodeId=' + \
+                            movie_id.split('id_')[1] + '%3D%3D&page=' + (str)(page)
+                    print(url)
+                    html = get_one_page(url)
+                    html = json.loads(html)['html']
+                    html = etree.HTML(html)
+                    # 如果页数已经超过有效页数，则停止获取下面的页数的资源类型
+                    if (html == None):
+                        break
+                    for each in html.xpath('//div[@class="item item-cover" or @class="item item-num" or @class="item item-num item-num-last"]'):
+                        type = {'name': '', 'url': ''}
+                        type_name = reverse_type_name(get_str_from_xpath(each.xpath('./@seq')))
+                        url = 'https:' + get_str_from_xpath(each.xpath('./a/@href'))
+                        type['name'] = type_name
+                        type['url'] = url
+                        print('正在爬取 '+movie_type+' '+(str)(i)+'/'+(str)(self.totalPage)+' '+(str)(self.index)+'/'+(str)(self.total)+' -> ' + movie_id + ' ' + source['name'] + ' ' + type['name'])
+                        types.append(type)
                 source['types'] = types
                 sources.append(source)
                 # 跳过播放列表为空的视频并记录
-                flag = 0
                 if (len(types) == 0):
                     continue
                 movie_item['sources'] = sources

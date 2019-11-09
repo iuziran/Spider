@@ -33,7 +33,7 @@ class KuyunSpider(scrapy.Spider):
         self.start_urls = [self.orign_url + '1.html']
         # 用于计算电影总数
         # 获取电影总数
-        if (target == None):
+        if (target == 'all'):
             orign_html = get_one_page(self.start_urls[0], encode='gb2312')
             time.sleep(2)
             orign_html = etree.HTML(orign_html)
@@ -48,7 +48,7 @@ class KuyunSpider(scrapy.Spider):
                 self.start_urls.append(self.orign_url + str(page_index) + '.html')
         elif (target == 'latest'):
             start_page = 2
-            self.total_page = 6
+            self.total_page = 1
             self.total = self.page_size * self.total_page
             for page_index in reverse_arr(range(start_page, self.total_page + 1)):
                 self.start_urls.append(self.orign_url + str(page_index) + '.html')
@@ -57,8 +57,6 @@ class KuyunSpider(scrapy.Spider):
 
         # 开始时间
         start = time.time()
-        # 获取 web 驱动
-        driver = get_driver()
         # 获取所有电影的 id，用于判断电影是否已经爬取
         collection = 'movie'
         db_utils = MongoDbUtils(collection)
@@ -102,7 +100,10 @@ class KuyunSpider(scrapy.Spider):
             movie_item['nickname'] = movie_item['name']
             movie_item['directors'] = get_arr_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[3]/td/font/a/text()'))
             movie_item['actors'] = get_arr_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[2]/td/font/text()'))
-            movie_item['type2'] = reverse_type2(get_str_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[4]/td/font/text()')))
+            type2 = get_str_from_xpath(each.xpath('./tr[1]/td[2]/table/tr[4]/td/font/text()'))
+            if (is_exclude_type2(type2) == True):
+                continue
+            movie_item['type2'] = reverse_type2(type2)
             if movie_item['type2'].find('综艺') != -1:
                 movie_item['type'] = '综艺'
             elif movie_item['type2'].find('动漫') != -1:

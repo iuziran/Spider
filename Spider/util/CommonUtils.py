@@ -2,8 +2,13 @@ import os
 import random
 import time
 
+import qrcode as qrcode
 import requests
 import re
+import datetime
+
+from elasticsearch import Elasticsearch, helpers
+from pymongo import MongoClient
 from tqdm import tqdm
 
 import urllib3
@@ -18,6 +23,54 @@ from PocketLifeSpider.util.MongoDbUtils import MongoDbUtils
 abspath = os.getcwd()
 # 警用requests中的警告
 urllib3.disable_warnings()
+
+# 修改影视的更新状态
+def modify_update_status():
+    collection = 'movie'
+    db_utils = MongoDbUtils(collection)
+    dic = {'$or': [{'update_status': ''}, {'update_status': None}]}
+    index = 1
+    movies = db_utils.find(dic)
+    total = movies.count()
+    for movie in movies:
+        print((str)(index) + '/' + (str)(total) + ' ' +  movie['id'] + ' ' + movie['name'])
+        dic = {'id': movie['id']}
+        new_dic = {'$set': {'update_status': movie['sources'][0]['name']}}
+        print(dic)
+        print(new_dic)
+        db_utils.update(dic, new_dic)
+        index += 1
+
+# 转换影视资源类型名称，例如将1转换为01
+def reverse_type_name(type_name):
+    if (len(type_name) == 1):
+        type_name = '0' + type_name
+    return type_name
+
+# 从影视资源类型名称中获取年份
+def get_year_from_name(name):
+    if (len(name.split(' ')[0].split('')) >= 4):
+        return name.split(' ')[0][4:]
+    else:
+        return name.split(' ')[1][4:]
+
+# 生成下载掌上影视APP二维码
+def generate_app_qrcode_image():
+    url = 'http://api.grayson.top/public/PocketFilm.apk'
+    generate_qrcode_image(url)
+
+# 根据url生成二维码
+def generate_qrcode_image(url):
+    qr = qrcode.QRCode(
+        version=2,
+        error_correction=qrcode.constants.ERROR_CORRECT_L,
+        box_size=5.1,
+        border=1
+    )  # 设置二维码的大小
+    qr.add_data(url)
+    qr.make(fit=True)
+    img = qr.make_image()
+    img.save("image/qrcode.png")
 
 # 修改图片中的地址后缀
 def change_src_suffix(old_suffix, new_suffix):
@@ -37,10 +90,12 @@ def get_exclude_type2_list():
                           '教育片', '亲子片', '魔法片', '同人片', '忍者片', '热血片', '普通话片', '漫画改编片', '闽南语片', '原创片', '日语片', '中国大陆片',
                           '7-10岁片', '0-3岁片', '合家欢片', '早教益智片', '轻小说改编片', '数学片', '真人特摄片', '布袋戏片', '动漫冒险片', '综艺真人秀片',
                           '综艺真人秀音乐片', '欧美动漫片', '综艺脱口秀片', '综艺音乐片', '国产动漫片', '内地综艺片', '港台综艺片', '日韩动漫片', '日韩综艺片', '欧美综艺片',
-                          '海外动漫片', '港台动漫片', '少儿综艺片', '国产剧预告片', '近代片', '综艺脱口秀真人秀片', '4K片', '综艺真人秀 音乐片', '综艺脱口秀 真人秀片',
+                          '海外动漫片', '港台动漫片', '少儿综艺片', '国产剧预告片', '近代片', '综艺脱口秀真人秀片', '4K片', '综艺真人秀 音乐片', '综艺脱口秀 真人秀片',
                           '喜剧剧', '奇幻剧', '抗日剧', '魔幻剧', '腾讯出品剧', '校园剧', '搞笑剧', '玄幻剧', '时装剧', '职场剧', '经侦剧', '罪案剧', '医疗剧', '歌舞剧',
                           '内地剧', '日剧', '韩剧', '台剧', '港剧', '连续剧', '韩国喜剧', '国产喜剧', '欧美喜剧', '台湾喜剧', '欧美剧家庭 喜剧', '日剧喜剧', '泰剧喜剧',
-                          '泰剧家庭 喜剧', '港剧喜剧', '日剧家庭 喜剧', '越南剧', '优酷出品剧', '港剧家庭 喜剧', '近代剧', '侦探剧']
+                          '泰剧家庭 喜剧', '港剧喜剧', '日剧家庭 喜剧', '越南剧', '优酷出品剧', '港剧家庭 喜剧', '近代剧', '侦探剧', '儿童综艺片', '美术片', '机战片',
+                          '故事片', '公主片', '悲剧片', '文艺片', 'OLI片', '国学片', '学英语片', '识字片', '百科片', '漫改片', '漫画改编剧', '动画剧', '原创剧', '院线剧',
+                          '自制剧', '言情剧', '商战剧', '伦理类', '轻改片', '经典片', '舞蹈片', '手工片', '诗词片', '催泪片', '港台综艺片', '日韩动漫片', '国产动漫片', '欧美动漫片']
     return exclude_type2_list
 
 # 修改影视第二类型
@@ -149,6 +204,7 @@ def is_exclude_type2(type2):
     if (
             type2.find('福利片') != -1 or
             type2.find('伦理片') != -1 or
+            type2.find('伦理类') != -1 or
             type2.find('音乐片') != -1 or
             type2.find('美女视频秀') != -1 or
             type2.find('嫩妹写真') != -1 or
@@ -159,6 +215,10 @@ def is_exclude_type2(type2):
             type2.find('腿模写真') != -1 or
             type2.find('街拍系列') != -1 or
             type2.find('街拍美女视频') != -1 or
+            type2.find('激情写真') != -1 or
+            type2.find('美女') != -1 or
+            type2.find('爆笑') != -1 or
+            type2.find('神曲') != -1 or
             type2 in get_exclude_type2_list()
     ):
         return True
@@ -167,11 +227,9 @@ def is_exclude_type2(type2):
 # 判断当前资源是否需要爬取
 def is_need_source(item, collection):
     db_utils = MongoDbUtils(collection)
-    dic = {'id': item['id']}
+    dic = {'name': item['name'], 'type': item['type']}
     movie_server = db_utils.find(dic)
     if (movie_server.count() == 0):
-        return True
-    if (item['update_status'] != movie_server.__getitem__(0)['update_status']):
         return True
     item_source = item['sources'][0]
     for source in movie_server.__getitem__(0)['sources']:
@@ -305,6 +363,32 @@ def reverse_type2(type2):
         type2 = '其他片'
     elif (type2 == '华语片'):
         type2 = '其他片'
+    elif (type2 == '儿童综艺片'):
+        type2 = '其他片'
+    elif (type2 == '美术片'):
+        type2 = '其他片'
+    elif (type2 == '机战片'):
+        type2 = '其他片'
+    elif (type2 == '故事片'):
+        type2 = '其他片'
+    elif (type2 == '公主片'):
+        type2 = '其他片'
+    elif (type2 == '悲剧片'):
+        type2 = '其他片'
+    elif (type2 == '文艺片'):
+        type2 = '其他片'
+    elif (type2 == 'LOLI片'):
+        type2 = '其他片'
+    elif (type2 == '国学片'):
+        type2 = '其他片'
+    elif (type2 == '学英语片'):
+        type2 = '其他片'
+    elif (type2 == '识字片'):
+        type2 = '其他片'
+    elif (type2 == '百科片'):
+        type2 = '其他片'
+    elif (type2 == '漫改片'):
+        type2 = '其他片'
     elif (type2 == '网络大电影片'):
         type2 = '短片'
     elif (type2 == '亲情片'):
@@ -375,6 +459,20 @@ def reverse_type2(type2):
         type2 = '喜剧'
     elif (type2 == '近代剧'):
         type2 = '其他剧'
+    elif (type2 == '漫画改编剧'):
+        type2 = '其他剧'
+    elif (type2 == '动画剧'):
+        type2 = '儿童剧'
+    elif (type2 == '原创剧'):
+        type2 = '其他剧'
+    elif (type2 == '院线剧'):
+        type2 = '其他剧'
+    elif (type2 == '自制剧'):
+        type2 = '其他剧'
+    elif (type2 == '言情剧'):
+        type2 = '剧情剧'
+    elif (type2 == '商战剧'):
+        type2 = '剧情剧'
     elif (type2 == '侦探剧'):
         type2 = '刑侦剧'
     return type2
@@ -628,7 +726,7 @@ def get_response(url):
     ua_header = {
         'User-Agent': 'Opera/9.80 (Windows NT 6.0) Presto/2.12.388 Version/12.14'
     }
-    return requests.get(url, headers=ua_header, verify=False, timeout=4)
+    return requests.get(url, headers=ua_header, verify=False, timeout=60)
 
 
 # 解析一个页面的信息
@@ -670,6 +768,9 @@ def get_driver(type=0):
         options.add_argument('--headless')
         # 禁用GPU
         options.add_argument('--disable-gpu')
+        # 解决centos上启动失败的问题
+        options.add_argument('--no-sandbox')
+        options.add_argument('--disable-dev-shm-usage')
         # 开启实验性功能参数
         options.add_experimental_option('excludeSwitches', ['enable-automation'])
         options.add_experimental_option("prefs", {
