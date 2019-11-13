@@ -24,6 +24,48 @@ abspath = os.getcwd()
 # 警用requests中的警告
 urllib3.disable_warnings()
 
+# 修改小品的类型
+def modify_piece_type(type, type2):
+    collection = 'piece_type'
+    db_utils = MongoDbUtils(collection)
+    dic = {'name': type}
+    piece_type = {'name': '', 'types': []}
+    types = []
+    if db_utils.find(dic).count() == 0:
+        piece_type['name'] = type
+        if (type2 != ''):
+            types.append(type2)
+        piece_type['types'] = types
+        db_utils.insert(piece_type)
+    else:
+        types_server = db_utils.find(dic).__getitem__(0)['types']
+        if (type2 != '' and type2 not in types_server):
+            types.append(type2)
+        if (types != types_server):
+            new_dic = {'$set': {'types': types}}
+            db_utils.update(dic, new_dic)
+
+
+# 获取今天的日期
+def get_today():
+    today=datetime.date.today()
+    return (str)(today)
+
+# 获取昨天的日期
+def get_yesterday():
+    today=datetime.date.today()
+    oneday=datetime.timedelta(days=1)
+    yesterday=today-oneday
+    return (str)(yesterday)
+
+# 修改影视的评分
+def modify_score():
+    collection = 'movie'
+    db_utils = MongoDbUtils(collection)
+    dic = {'score': '0.0'}
+    new_dic = {'$set': {'score': get_random_str()}}
+    db_utils.update(dic, new_dic)
+
 # 修改影视的更新状态
 def modify_update_status():
     collection = 'movie'
@@ -157,6 +199,7 @@ def combine_movie():
 # 判断小品类型是否在被排除的类型里面
 def exclude_piece_type2(type2):
     exclude_type2_list = [
+        '床戏',
         '吻戏'
     ]
     if (type2 in exclude_type2_list):
